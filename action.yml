@@ -9,7 +9,7 @@ inputs:
     description: 'Service name (e.g. webapp-api). Becomes part of the per-service Jira label.'
     required: true
   repo-name:
-    description: 'The GitHub repository in owner/name form (typically ${{ github.repository }}). Used to namespace the per-service label.'
+    description: 'The GitHub repository in owner/name form (typically the github.repository context value). Used to namespace the per-service label.'
     required: true
   deployment-start:
     description: 'ISO 8601 UTC timestamp captured immediately before the production deploy step.'
