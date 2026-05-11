@@ -220,17 +220,29 @@ runs:
           exit 0
         fi
 
-        response=$(curl -fsSL -X POST \
+        # Capture body + status separately so we can print the error body on non-2xx.
+        body_file=$(mktemp)
+        http_code=$(curl -sSL -X POST \
           -H "Authorization: Bearer ${JIRA_TOKEN}" \
           -H "Content-Type: application/json" \
           --data "${payload}" \
+          -o "${body_file}" \
+          -w '%{http_code}' \
           "${JIRA_HOST}/jira_gateway/create_issue")
 
-        echo "Response: ${response}"
-        issue_key=$(printf '%s' "${response}" | jq -r '.key // empty')
+        echo "HTTP status: ${http_code}"
+        echo "Response body:"
+        cat "${body_file}"
+        echo
 
+        if [[ "${http_code}" != 2* ]]; then
+          echo "create_issue failed with HTTP ${http_code}" >&2
+          exit 1
+        fi
+
+        issue_key=$(jq -r '.key // empty' < "${body_file}")
         if [[ -z "${issue_key}" ]]; then
-          echo "create_issue did not return a key; response above" >&2
+          echo "create_issue returned 2xx but no .key in response" >&2
           exit 1
         fi
 
@@ -256,10 +268,23 @@ runs:
 
         body=$(jq -nc --arg id "${transition_id}" '{ transition: { id: $id } }')
 
-        curl -fsSL -X POST \
+        body_file=$(mktemp)
+        http_code=$(curl -sSL -X POST \
           -H "Authorization: Bearer ${JIRA_TOKEN}" \
           -H "Content-Type: application/json" \
           --data "${body}" \
-          "${JIRA_HOST}/jira_gateway/do_transition?issueIdOrKey=${ISSUE_KEY}"
+          -o "${body_file}" \
+          -w '%{http_code}' \
+          "${JIRA_HOST}/jira_gateway/do_transition?issueIdOrKey=${ISSUE_KEY}")
+
+        echo "HTTP status: ${http_code}"
+        echo "Response body:"
+        cat "${body_file}"
+        echo
+
+        if [[ "${http_code}" != 2* ]]; then
+          echo "do_transition failed with HTTP ${http_code}" >&2
+          exit 1
+        fi
 
         echo "Transitioned ${ISSUE_KEY} via transition id ${transition_id}"
