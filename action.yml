@@ -94,6 +94,7 @@ runs:
         FROM_SHA: ${{ steps.find_from_sha.outputs.from_sha }}
         DEPLOY_START: ${{ inputs.deployment-start }}
         DEPLOY_STATUS: ${{ inputs.deployment-status }}
+        REPO_NAME: ${{ inputs.repo-name }}
       run: |
         set -euo pipefail
 
@@ -128,12 +129,15 @@ runs:
           done <<< "$commits"
         fi
 
-        # Build a description: commit log lines, with GitHub issue refs expanded to URLs.
-        # Order matters: cross-repo refs first, then bare refs.
+        # Build a description: commit log lines, with GitHub issue/PR refs expanded to URLs.
+        # Order matters: cross-repo refs (always Likvido.App by convention) before bare refs.
+        # Bare #N is treated as a ref in the *current* repo, because GitHub-generated merge
+        # commit messages ("Merge pull request #N from ...") use the local PR number.
+        # GitHub redirects /issues/N <-> /pull/N, so /issues works for both.
         commitlog=$(git log --first-parent --pretty=format:'- %h %s (%an)' ${range} 2>/dev/null || echo '- (no commits in range)')
         commitlog=$(printf '%s\n' "$commitlog" \
           | sed -E 's@Likvido/Likvido\.App#([0-9]+)@https://github.com/Likvido/Likvido.App/issues/\1@g' \
-          | sed -E 's@(^|[^A-Za-z0-9_])#([0-9]+)@\1https://github.com/Likvido/Likvido.App/issues/\2@g')
+          | sed -E "s@(^|[^A-Za-z0-9_])#([0-9]+)@\1https://github.com/${REPO_NAME}/issues/\2@g")
 
         # On non-success outcomes, zero the metric fields per plan.
         if [[ "${DEPLOY_STATUS}" != "success" ]]; then
