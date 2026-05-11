@@ -188,6 +188,9 @@ runs:
         summary="${APP_NAME} release ${short_sha}"
         description=$(printf 'Changelog:\n%s' "${COMMITLOG}")
 
+        # Build info: link back to the GitHub Actions workflow run.
+        build_info="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
         labels_json=$(jq -nc --arg svc "${service_label}" --arg excl "${EXCLUDE}" '
           if $excl == "true" then [$svc, "ENGPexclude"] else [$svc] end
         ')
@@ -196,6 +199,7 @@ runs:
           --arg summary "${summary}" \
           --arg description "${description}" \
           --arg deploy_end "${DEPLOY_END_ISO}" \
+          --arg build_info "${build_info}" \
           --argjson deploy_time "${DEPLOYMENT_TIME_MIN}" \
           --argjson lead_time "${TOTAL_LEAD_MIN}" \
           --argjson changes "${NUMBER_OF_CHANGES}" \
@@ -209,6 +213,7 @@ runs:
               description: $description,
               labels: $labels,
               customfield_16561: $deploy_end,
+              customfield_19460: $build_info,
               customfield_19761: $deploy_time,
               customfield_26160: $lead_time,
               customfield_27260: $changes
