@@ -198,7 +198,7 @@ runs:
           --argjson labels "${labels_json}" \
           '{
             fields: {
-              project: { key: "SDOP" },
+              project: { id: "40203" },
               issuetype: { name: "SDOP Deployment" },
               components: [ { name: "1664-Likvido" } ],
               summary: $summary,
