@@ -230,8 +230,11 @@ runs:
         fi
 
         # Capture body + status separately so we can print the error body on non-2xx.
+        # curl --retry handles transient errors (408/429/5xx + connection errors) with
+        # exponential backoff (2, 4, 8, 16, 32s).
         body_file=$(mktemp)
         http_code=$(curl -sSL -X POST \
+          --retry 5 --retry-delay 2 --retry-max-time 60 \
           -H "Authorization: Bearer ${JIRA_TOKEN}" \
           -H "Content-Type: application/json" \
           --data "${payload}" \
@@ -279,6 +282,7 @@ runs:
 
         body_file=$(mktemp)
         http_code=$(curl -sSL -X POST \
+          --retry 5 --retry-delay 2 --retry-max-time 60 \
           -H "Authorization: Bearer ${JIRA_TOKEN}" \
           -H "Content-Type: application/json" \
           --data "${body}" \
